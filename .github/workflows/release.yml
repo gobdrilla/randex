@@ -85,4 +85,19 @@ jobs:
           releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: true
           prerelease: false
+          uploadUpdaterJson: false
           args: ${{ matrix.args }}
+
+  # latest.json einmal nach allen Builds: aus der Matrix parallel hochgeladen, überschreiben sich die Jobs
+  updater:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: latest.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          scripts/updater-json.sh "$GITHUB_REF_NAME" > latest.json
+          gh release upload "$GITHUB_REF_NAME" latest.json -R "$GITHUB_REPOSITORY" --clobber
