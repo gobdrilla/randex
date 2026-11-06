@@ -1,6 +1,6 @@
 [package]
 name = "randex"
-version = "0.1.18"
+version = "0.1.19"
 description = "Tracker für Pokémon-Randomizer-Runs"
 authors = ["Marlon Schmitz"]
 edition = "2021"
