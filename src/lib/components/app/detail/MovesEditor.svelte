@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { clampLevel } from "$lib/utils";
   import { Input } from "$lib/components/ui/input/index.js";
   import { Chip, EditRow, Section } from "$lib/components/kit";
   import { app, updateEntry } from "$lib/runs.svelte.ts";
@@ -12,7 +13,6 @@
   const tmMoves = $derived(entry.tmMoves ?? []);
   let newLevel = $state(1);
 
-  const clampLevel = (v: number) => Math.min(100, Math.max(1, Math.round(v) || 1));
 
   // Nur beim Hinzufügen sortieren: Zeilen sind per Index gekeyt, Umsortieren verschöbe den Fokus.
   function setLevelMoves(list: LevelMove[]) {

@@ -11,3 +11,6 @@ export type WithoutChildrenOrChild<T> = WithoutChildren<WithoutChild<T>>;
 export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & {
   ref?: U | null;
 };
+
+/** Level-Eingabe auf 1–100 begrenzen; leer/ungültig = 1 */
+export const clampLevel = (v: number) => Math.min(100, Math.max(1, Math.round(v) || 1));

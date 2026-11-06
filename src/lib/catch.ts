@@ -11,15 +11,15 @@ export const CATCH_STATUS_LABELS: Record<CatchStatus, string> = {
 };
 
 export interface Ball {
-  id: "poke" | "great" | "ultra" | "net" | "dusk" | "quick" | "timer";
+  id: "poke" | "great" | "ultra" | "net" | "nest" | "dusk" | "quick" | "timer";
   name: string;
   /** Wann der Bonus gilt; ohne = immer */
   when?: string;
   factor: number;
 }
 
-/** Bälle des Spiels mit ihrem Faktor; Netzball nur, wenn er bei diesen Typen wirkt. */
-export function ballsFor(gen: number, types: readonly TypeId[]): Ball[] {
+/** Bälle des Spiels mit ihrem Faktor; Netz-/Nestball nur, wenn sie bei diesen Typen bzw. diesem Level wirken. */
+export function ballsFor(gen: number, types: readonly TypeId[], level: number): Ball[] {
   const balls: Ball[] = [
     { id: "poke", name: "Pokéball", factor: 1 },
     { id: "great", name: "Superball", factor: 1.5 },
@@ -28,6 +28,8 @@ export function ballsFor(gen: number, types: readonly TypeId[]): Ball[] {
   if (gen >= 3 && types.some((t) => t === "water" || t === "bug")) {
     balls.push({ id: "net", name: "Netzball", factor: gen >= 7 ? 3.5 : 3 });
   }
+  const nest = Math.max(1, ((gen >= 5 ? 41 : 40) - level) / 10);
+  if (gen >= 3 && nest > 1) balls.push({ id: "nest", name: "Nestball", factor: nest });
   if (gen >= 4) {
     balls.push({ id: "dusk", name: "Finsterball", when: "nachts/Höhle", factor: gen >= 7 ? 3 : 3.5 });
     balls.push({ id: "quick", name: "Flottball", when: "1. Runde", factor: gen >= 5 ? 5 : 4 });
@@ -40,11 +42,11 @@ export function ballsFor(gen: number, types: readonly TypeId[]): Ball[] {
 }
 
 /**
- * Fangchance pro Wurf (0–1). hp = KP-Anteil 0–1 (0 ≈ 1 KP).
- * shortcut: ohne Superfang (Gen 5+), dunkles Gras, O-Kraft und Level-/Orden-Faktoren (Gen 8+), die das Ergebnis
+ * Fangchance pro Wurf (0–1). hp = KP-Anteil 0–1 (0 ≈ 1 KP), level = Level des wilden Pokémon.
+ * shortcut: ohne Superfang (Gen 5+), dunkles Gras, O-Kraft und Orden-Malus (Gen 8+), die das Ergebnis
  * nur in Sonderfällen ändern; ergänzen, falls jemand danach fragt.
  */
-export function catchChance(gen: number, rate: number, hp: number, status: CatchStatus, ball: Ball): number {
+export function catchChance(gen: number, rate: number, hp: number, status: CatchStatus, ball: Ball, level: number): number {
   if (gen <= 1) return gen1(rate, hp, status, ball.id);
   if (gen === 2) {
     // Bug: nur Schlaf/Frost zählt
@@ -52,7 +54,9 @@ export function catchChance(gen: number, rate: number, hp: number, status: Catch
     return (x + 1) / 256;
   }
   const s = status === "sleep" ? (gen >= 5 ? 2.5 : 2) : status === "other" ? 1.5 : 1;
-  const x = Math.min(255, Math.floor(((3 - 2 * hp) * rate * ball.factor) / 3) * s);
+  // Bonus für niedrige Level: Gen 8 unter Lv. 20, Gen 9 unter Lv. 13
+  const low = gen === 8 ? Math.max(1, (30 - level) / 10) : gen >= 9 ? Math.max(1, (36 - 2 * level) / 10) : 1;
+  const x = Math.min(255, Math.floor(((3 - 2 * hp) * rate * ball.factor * low) / 3) * s);
   if (x >= 255) return 1;
   if (x <= 0) return 0;
   if (gen <= 4) {

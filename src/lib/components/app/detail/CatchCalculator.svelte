@@ -1,9 +1,11 @@
 <script lang="ts">
   import { app } from "$lib/runs.svelte.ts";
+  import { clampLevel } from "$lib/utils";
   import { ballsFor, catchChance, CATCH_STATUS_LABELS, type CatchStatus } from "$lib/catch.ts";
   import type { TypeId } from "$lib/types.ts";
   import * as ToggleGroup from "$lib/components/ui/toggle-group/index.js";
-  import { EmptyState, Hint, SegmentItem, StatBar } from "$lib/components/kit";
+  import { Input } from "$lib/components/ui/input";
+  import { EmptyState, Field, Hint, SegmentItem, StatBar } from "$lib/components/kit";
   import ItemIcon from "../ItemIcon.svelte";
 
   let { captureRate, types }: { captureRate: number; types: readonly TypeId[] } = $props();
@@ -21,11 +23,12 @@
   const uid = $props.id();
   let hp = $state("1");
   let status = $state<CatchStatus>("none");
+  let level = $state(10);
 
   const gen = $derived(app.data?.game.generation ?? 0);
   const supported = $derived(!!app.current && !UNSUPPORTED.has(app.current.gameId));
   const rows = $derived(
-    ballsFor(gen, types).map((ball) => ({ ball, chance: catchChance(gen, captureRate, Number(hp), status, ball) })),
+    ballsFor(gen, types, level).map((ball) => ({ ball, chance: catchChance(gen, captureRate, Number(hp), status, ball, level) })),
   );
 
   const percent = (p: number) => `${(p * 100).toLocaleString("de-DE", { maximumFractionDigits: p < 0.1 ? 1 : 0 })} %`;
@@ -38,6 +41,17 @@
 {:else}
   <div class="flex flex-col gap-3">
     <Hint>Fangrate {captureRate}</Hint>
+    <Field label="Level" for="{uid}-level">
+      <Input
+        id="{uid}-level"
+        type="number"
+        min={1}
+        max={100}
+        value={level}
+        class="w-20"
+        onchange={(e) => (level = clampLevel(e.currentTarget.valueAsNumber))}
+      />
+    </Field>
     <div class="flex flex-col gap-1">
       <span class="text-sm font-medium" id="{uid}-hp">KP</span>
       <ToggleGroup.Root
